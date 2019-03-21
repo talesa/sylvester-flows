@@ -37,13 +37,13 @@ def train(epoch, train_loader, model, opt, args):
         loss, rec, kl, bpd = calculate_loss(x_mean, data, z_mu, z_var, z0, zk, ldj, args, beta=beta)
 
         loss.backward()
-        train_loss[batch_idx] = loss.data[0]
+        train_loss[batch_idx] = loss.item()
         train_bpd[batch_idx] = bpd
 
         opt.step()
 
-        rec = rec.data[0]
-        kl = kl.data[0]
+        rec = rec.item()
+        kl = kl.item()
 
         num_data += len(data)
 
@@ -51,11 +51,11 @@ def train(epoch, train_loader, model, opt, args):
             if args.input_type == 'binary':
                 print('Epoch: {:3d} [{:5d}/{:5d} ({:2.0f}%)]  \tLoss: {:11.6f}\trec: {:11.6f}\tkl: {:11.6f}'.format(
                     epoch, num_data, len(train_loader.sampler), 100. * batch_idx / len(train_loader),
-                    loss.data[0], rec, kl))
+                    loss.item(), rec, kl))
             else:
                 perc = 100. * batch_idx / len(train_loader)
                 tmp = 'Epoch: {:3d} [{:5d}/{:5d} ({:2.0f}%)] \tLoss: {:11.6f}\tbpd: {:8.6f}'
-                print(tmp.format(epoch, num_data, len(train_loader.sampler), perc, loss.data[0], bpd),
+                print(tmp.format(epoch, num_data, len(train_loader.sampler), perc, loss.item(), bpd),
                       '\trec: {:11.3f}\tkl: {:11.6f}'.format(rec, kl))
 
     if args.input_type == 'binary':
@@ -85,38 +85,40 @@ def evaluate(data_loader, model, args, testing=False, file=None, epoch=0):
         if args.cuda:
             data = data.cuda()
 
-        data = Variable(data, volatile=True)
-        data = data.view(-1, *args.input_size)
+        with torch.no_grad():
+            data = Variable(data) #, volatile=True)
+            data = data.view(-1, *args.input_size)
 
-        x_mean, z_mu, z_var, ldj, z0, zk = model(data)
+            x_mean, z_mu, z_var, ldj, z0, zk = model(data)
 
-        batch_loss, rec, kl, batch_bpd = calculate_loss(x_mean, data, z_mu, z_var, z0, zk, ldj, args)
+            batch_loss, rec, kl, batch_bpd = calculate_loss(x_mean, data, z_mu, z_var, z0, zk, ldj, args)
 
-        bpd += batch_bpd
-        loss += batch_loss.data[0]
+            bpd += batch_bpd
+            loss += batch_loss.item()
 
-        # PRINT RECONSTRUCTIONS
-        if batch_idx == 1 and testing is False:
-            plot_reconstructions(data, x_mean, batch_loss, loss_type, epoch, args)
+            # PRINT RECONSTRUCTIONS
+            if batch_idx == 1 and testing is False:
+                plot_reconstructions(data, x_mean, batch_loss, loss_type, epoch, args)
 
     loss /= len(data_loader)
     bpd /= len(data_loader)
 
     # Compute log-likelihood
     if testing:
-        test_data = Variable(data_loader.dataset.data_tensor, volatile=True)
+        with torch.no_grad():
+            test_data = Variable(data_loader.dataset.tensors[0])#, volatile=True)
 
-        if args.cuda:
-            test_data = test_data.cuda()
+            if args.cuda:
+                test_data = test_data.cuda()
 
-        print('Computing log-likelihood on test set')
+            print('Computing log-likelihood on test set')
 
-        model.eval()
+            model.eval()
 
-        if args.dataset == 'caltech':
-            log_likelihood, nll_bpd = calculate_likelihood(test_data, model, args, S=2000, MB=1000)
-        else:
-            log_likelihood, nll_bpd = calculate_likelihood(test_data, model, args, S=5000, MB=1000)
+            if args.dataset == 'caltech':
+                log_likelihood, nll_bpd = calculate_likelihood(test_data, model, args, S=2000, MB=1000)
+            else:
+                log_likelihood, nll_bpd = calculate_likelihood(test_data, model, args, S=5000, MB=1000)
     else:
         log_likelihood = None
         nll_bpd = None

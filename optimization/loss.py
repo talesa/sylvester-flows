@@ -22,8 +22,7 @@ def binary_loss_function(recon_x, x, z_mu, z_var, z_0, z_k, ldj, beta=1.):
     :return: loss, ce, kl
     """
 
-    reconstruction_function = nn.BCELoss()
-    reconstruction_function.size_average = False
+    reconstruction_function = nn.BCELoss(reduction='sum')
 
     batch_size = x.size(0)
 
@@ -44,9 +43,9 @@ def binary_loss_function(recon_x, x, z_mu, z_var, z_0, z_k, ldj, beta=1.):
     kl = (summed_logs - summed_ldj)
     loss = bce + beta * kl
 
-    loss /= float(batch_size)
-    bce /= float(batch_size)
-    kl /= float(batch_size)
+    loss = loss/float(batch_size)
+    bce = bce/float(batch_size)
+    kl = kl/float(batch_size)
 
     return loss, bce, kl
 
@@ -243,7 +242,7 @@ def calculate_loss(x_mean, x, z_mu, z_var, z_0, z_k, ldj, args, beta=1.):
 
     elif args.input_type == 'multinomial':
         loss, rec, kl = multinomial_loss_function(x_mean, x, z_mu, z_var, z_0, z_k, ldj, args, beta=beta)
-        bpd = loss.data[0] / (np.prod(args.input_size) * np.log(2.))
+        bpd = loss.item() / (np.prod(args.input_size) * np.log(2.))
 
     else:
         raise ValueError('Invalid input type for calculate loss: %s.' % args.input_type)
