@@ -1,6 +1,6 @@
 # Sylvester normalizing flows for variational inference
 
-Pytorch implementation of Sylvester normalizing flows, based on our paper:
+Pytorch implementation of Sylvester normalizing flows, based on the paper:
 
 [Sylvester normalizing flows for variational inference](https://arxiv.org/abs/1803.05649) (UAI 2018) <br/>
 Rianne van den Berg*, Leonard Hasenclever*, Jakub Tomczak, Max Welling 
@@ -8,10 +8,9 @@ Rianne van den Berg*, Leonard Hasenclever*, Jakub Tomczak, Max Welling
 *Equal contribution
 
 ## Requirements
-The code is compatible with:
+Original code at https://github.com/riannevdberg/sylvester-flows is compatible with `pytorch 0.3.0`.
 
-  * `pytorch 0.3.0` **WARNING**: More recent versions of pytorch have different default flags for the binary cross entropy loss module: nn.BCELoss(). You have to adapt the appropriate flags if you want to port this code to a later version.  
-  * `python 2.7`
+This code is compatible with `pytorch 1.0.0`.
 
 ## Data
 The experiments can be run on the following datasets:
